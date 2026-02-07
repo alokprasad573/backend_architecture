@@ -48,24 +48,24 @@ This diagram shows how the Technical Architecture supports the hierarchy.
 
 ```mermaid
 graph LR
-    UserClient["Client Browser (React Admin Dashboard)"]
+    UserClient["Client Browser - React Admin Dashboard"]
     
-    subgraph "Backend Services (Node.js/Express)"
-        AuthMiddleware["Auth Middleware (JWT + RBAC)"]
-        Controllers["API Controllers"]
-        Routes["API Routes"]
+    subgraph "Backend Services - Node.js Express"
+        AuthMiddleware["Auth Middleware - JWT RBAC"]
+        API_Controllers["API Controllers"]
+        API_Routes["API Routes"]
     end
     
-    Database[("MongoDB")]
+    DBNode[("MongoDB")]
     
-    UserClient -->|HTTP Request (Token)| AuthMiddleware
-    AuthMiddleware -->|Verify Role & Scope| Routes
-    Routes --> Controllers
-    Controllers -->|Query Scoped Data| Database
+    UserClient -->|"HTTP Request Token"| AuthMiddleware
+    AuthMiddleware -->|"Verify Role and Scope"| API_Routes
+    API_Routes --> API_Controllers
+    API_Controllers -->|"Query Scoped Data"| DBNode
     
     %% Scoping logic
-    note["Role-Based Data Access Layer checks Hierarchy Level before querying DB"]
-    AuthMiddleware -.-> note
+    NoteNode["Role-Based Data Access Layer checks Hierarchy Level before querying DB"]
+    AuthMiddleware -.-> NoteNode
 ```
 
 ## 3. Data Flow Diagrams (DFD)
