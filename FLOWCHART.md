@@ -127,3 +127,93 @@ graph TD
     P3 -->|"Write User Data"| D1
     P3 -->|"Log Action"| D2
 ```
+
+## 4. Comprehensive System Overview
+This unified diagram integrates the User Hierarchy, Backend Architecture, and Data Flows into a single holistic view.
+
+```mermaid
+graph TD
+    %% ==========================================
+    %% 1. User Hierarchy Layer
+    %% ==========================================
+    subgraph Users["User Hierarchy"]
+        direction TB
+        SA["Super Admin"]:::admin
+        A["Admin"]:::admin
+        M["Manager"]:::manager
+        U["End User"]:::user
+        
+        SA -->|Creates| A
+        A -->|Creates| M
+        M -->|Onboards| U
+    end
+
+    %% ==========================================
+    %% 2. Frontend Layer
+    %% ==========================================
+    subgraph Frontend["Client Side (React)"]
+        Client["Admin Dashboard UI"]:::frontend
+    end
+
+    %% ==========================================
+    %% 3. Backend Layer
+    %% ==========================================
+    subgraph Backend["Backend Services (Node.js)"]
+        direction TB
+        APIGateway["API Routes / Gateway"]:::backend
+        AuthMw["Auth Middleware (JWT + RBAC)"]:::backend
+        
+        subgraph Controllers["Business Logic Controllers"]
+            C_Auth["Auth Controller"]:::logic
+            C_Dash["Dashboard Controller"]:::logic
+            C_User["User Mgmt Controller"]:::logic
+        end
+    end
+
+    %% ==========================================
+    %% 4. Data Layer
+    %% ==========================================
+    subgraph DataPersistence["Data Persistence"]
+        direction TB
+        DB_User[("User Database")]:::db
+        DB_Logs[("Activity Logs")]:::db
+        DB_Cache[("Reports Cache")]:::db
+    end
+
+    %% ==========================================
+    %% Connections & Flows
+    %% ==========================================
+    
+    %% User Interaction
+    Users -->|Interacts with| Client
+    
+    %% Client to Backend
+    Client -->|HTTPS Request| APIGateway
+    APIGateway --> AuthMw
+    
+    %% Auth Routing
+    AuthMw -->|Validates Token| Controllers
+    
+    %% Controller Actions
+    %% 1. Auth Flow
+    C_Auth -->|Verify Creds| DB_User
+    C_Auth -->|Log Login| DB_Logs
+    
+    %% 2. Dashboard Flow
+    C_Dash -->|Read Stats| DB_User
+    C_Dash -->|Read Logs| DB_Logs
+    C_Dash -->|Write Cache| DB_Cache
+    
+    %% 3. User Mgmt Flow
+    C_User -->|CRUD Operations| DB_User
+    C_User -->|Log Actions| DB_Logs
+
+    %% Styling
+    classDef admin fill:#ff9999,stroke:#333,stroke-width:2px;
+    classDef manager fill:#99ccff,stroke:#333,stroke-width:2px;
+    classDef user fill:#99ff99,stroke:#333,stroke-width:2px;
+    classDef frontend fill:#ffffcc,stroke:#333,stroke-width:2px;
+    classDef backend fill:#f9f9f9,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5;
+    classDef logic fill:#e6e6e6,stroke:#333,stroke-width:2px;
+    classDef db fill:#e1d5e7,stroke:#333,stroke-width:2px;
+```
