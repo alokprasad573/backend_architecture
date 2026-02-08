@@ -1,219 +1,184 @@
-# System Architecture & Hierarchy Flowcharts
+# SUVIDHA System Flowcharts & Interaction Models
 
-## 1. Hierarchical User Role Structure
-This flowchart illustrates the levels of access and control within the Suvidha-Lite+ Dashboard.
+## 1. Unified Kiosk User Experience (CX) Flow
+This flowchart describes the citizen's journey from language selection to service completion.
 
 ```mermaid
 graph TD
-    %% Nodes
-    SA["Super Admin"]
-    A["Admin"]
-    M["Manager"]
-    U["End User"]
-
-    %% Relationships
-    SA -->|Creates/Manages| A
-    A -->|Creates/Manages| M
-    M -->|Onboards/Supports| U
-
-    %% Responsibilities
-    subgraph "Super Admin Level (Central)"
-        SA_Dashboard["Monitoring & Global Config"]
-        SA --> SA_Dashboard
-    end
-
-    subgraph "Admin Level (Regional/Zone)"
-        A_Dashboard["Region Reporting & Mgmt"]
-        A --> A_Dashboard
-    end
-
-    subgraph "Manager Level (Local)"
-        M_Dashboard["User Operations & Approval"]
-        M --> M_Dashboard
-    end
-
-    subgraph "User Level"
-        U_Dashboard["Service Requests & Status"]
-        U --> U_Dashboard
-    end
-
-    %% Data Flow
-    U_Dashboard -.->|Submit Request| M_Dashboard
-    M_Dashboard -.->|Escalate/Report| A_Dashboard
-    A_Dashboard -.->|Sync Data| SA_Dashboard
+    Start([Kiosk Idle Screen]) --> Lang[Select Language - Hindi/English/Regional]
+    Lang --> Auth{Citizen Login/Auth}
+    
+    Auth -- Direct Access --> Guest[View Alerts/Emergency Info]
+    Auth -- Secure Login --> Dashboard[Unified Service Dashboard]
+    
+    Dashboard --> ServiceA[Electricity: Pay Bill / New Meter]
+    Dashboard --> ServiceB[Gas: Connection Status / Request]
+    Dashboard --> ServiceC[Municipal: Water / Waste / Grievance]
+    
+    ServiceA --> Pay[Secure Payment Gateway]
+    ServiceB --> Upload[Document Upload / Scan]
+    ServiceC --> Ticket[Grievance Submission]
+    
+    Pay --> Print[Receipt Generation & Local Cache]
+    Upload --> Status[Live Tracking ID]
+    Ticket --> Notify[Real-time Admin Alert]
+    
+    Print --> End([Logout & Data Wipe])
+    Status --> End
+    Notify --> End
 ```
 
-## 2. Backend System Architecture
-This diagram shows how the Technical Architecture supports the hierarchy.
+---
+
+## 2. Microservices Backend Architecture
+Detailed view of how loosely coupled services communicate via a Shared API Gateway.
 
 ```mermaid
 graph LR
-    UserClient["Client Browser - React Admin Dashboard"]
-    
-    subgraph "Backend Services - Node.js Express"
-        AuthMiddleware["Auth Middleware - JWT RBAC"]
-        API_Controllers["API Controllers"]
-        API_Routes["API Routes"]
+    subgraph "Kiosk / Client Layer"
+        TouchUI["Touch Interface (React)"]
+        Scanner["Doc Scanner/Printer API"]
     end
-    
-    DBNode[("MongoDB")]
-    
-    UserClient -->|"HTTP Request Token"| AuthMiddleware
-    AuthMiddleware -->|"Verify Role and Scope"| API_Routes
-    API_Routes --> API_Controllers
-    API_Controllers -->|"Query Scoped Data"| DBNode
-    
-    %% Scoping logic
-    NoteNode["Role-Based Data Access Layer checks Hierarchy Level before querying DB"]
-    AuthMiddleware -.-> NoteNode
+
+    subgraph "API Gateway"
+        Gateway["Express Gateway / Load Balancer"]
+        RBAC["Role & DPDP Middleware"]
+    end
+
+    subgraph "Service Layer (Microservices)"
+        AuthSvc["Auth Service"]
+        UtilSvc["Utility Service (Elec/Gas)"]
+        MunSvc["Municipal Service"]
+        NotifSvc["Grievance & Alerts"]
+    end
+
+    subgraph "Persistence Layer"
+        DB_SQL[("PostgreSQL: Transactions")]
+        DB_NoSQL[("MongoDB: Logs/Alerts")]
+    end
+
+    TouchUI <--> Gateway
+    Gateway --> RBAC
+    RBAC --> AuthSvc
+    RBAC --> UtilSvc
+    RBAC --> MunSvc
+    RBAC --> NotifSvc
+
+    AuthSvc & UtilSvc --> DB_SQL
+    MunSvc & NotifSvc --> DB_NoSQL
 ```
 
-## 3. Data Flow Diagrams (DFD)
+---
 
-### Level 0: Context Diagram
-This diagram represents the interaction between valid Users and the System.
-
-```mermaid
-graph LR
-    U_Entity["User / Admin / Manager"]
-    Sys_App["SUVIDHA-LITE System"]
-    
-    U_Entity -->|"1. Login Credentials"| Sys_App
-    U_Entity -->|"2. Dashboard Requests"| Sys_App
-    U_Entity -->|"3. User Mgmt Actions"| Sys_App
-    
-    Sys_App -->|"4. Auth Token"| U_Entity
-    Sys_App -->|"5. Reports & Analytics"| U_Entity
-    Sys_App -->|"6. Status Updates"| U_Entity
-```
-
-### Level 1: Data Flow Breakdown
-This diagram details the flow of data through the internal processes and data stores.
+## 3. Administrative & Monitoring Hierarchy
+Flow of data from local Kiosks to Regional and Central Admins.
 
 ```mermaid
 graph TD
-    %% External Entity
-    UserEntity["User Entity"]
+    K1[Kiosk 001] --> M1[Local Manager Dashboard]
+    K2[Kiosk 002] --> M1
     
-    %% Processes
-    P1["1.0 Authentication"]
-    P2["2.0 Dashboard Controller"]
-    P3["3.0 User Management"]
+    M1 -->|Escalate/Aggregated Reports| A1[Regional Admin - West Zone]
+    M2[Other Managers] --> A1
     
-    %% Data Stores
-    D1[("User DB")]
-    D2[("Activity Logs")]
-    D3[("Reports/Data Cache")]
-
-    %% Flow 1: Auth
-    UserEntity -->|Credentials| P1
-    P1 -->|"Validate User"| D1
-    D1 -.->|"User Profile"| P1
-    P1 -->|"Log Login"| D2
-    P1 -->|"JWT Token"| UserEntity
-
-    %% Flow 2: Dashboard
-    UserEntity -->|"Request Stats"| P2
-    P2 -->|"Query Data"| D1
-    P2 -->|"Query Logs"| D2
-    D1 -.->|"User Counts"| P2
-    D2 -.->|"Activity Stats"| P2
-    P2 -->|"Save Cache"| D3
-    P2 -->|"Dashboard Data"| UserEntity
-
-    %% Flow 3: User Mgmt
-    UserEntity -->|"Create/Update User"| P3
-    P3 -->|"Check Permissions"| P1
-    P3 -->|"Write User Data"| D1
-    P3 -->|"Log Action"| D2
+    A1 -->|Strategic Data Sync| SA[Super Admin - Central C-DAC]
+    
+    subgraph "Control Capabilities"
+        SA -->|Global Policy Update| A1
+        A1 -->|Local Service Config| M1
+        M1 -->|Immediate Kiosk Alert| K1
+    end
 ```
 
-## 4. Comprehensive System Overview
-This unified diagram integrates the User Hierarchy, Backend Architecture, and Data Flows into a single holistic view.
+---
+
+## 4. Grievance Redressal Lifecycle
+How service requests are handled across the hierarchy.
 
 ```mermaid
-graph TD
-    %% ==========================================
-    %% 1. User Hierarchy Layer
-    %% ==========================================
-    subgraph Users["User Hierarchy"]
+sequenceDiagram
+    participant C as Citizen (Kiosk)
+    participant M as Manager (Local)
+    participant A as Admin (Regional)
+    participant DB as System DB
+
+    C->>+DB: Submit Grievance + Document
+    DB-->>M: Notify New Ticket
+    M->>+M: Review & Verify Document
+    alt Valid Request
+        M->>DB: Update Status: 'In Progress'
+        DB-->>C: Real-time Notification (Kiosk/SMS)
+    else Complex Issue
+        M->>A: Escalate to Regional Level
+        A->>DB: Approve/Resolve
+    end
+    DB-->>C: 'Request Completed' + Print Receipt
+```
+
+
+## 5. System Security & Compliance
+Detailed view of security measures and compliance protocols.
+
+```mermaid
+graph TB
+    subgraph "I. Citizen Interaction Layer"
+        direction LR
+        Kiosk["Touch Kiosk UI (React/Angular)"]
+        CitizenWA["Citizen WhatsApp Mobile"]
+    end
+
+    subgraph "II. Security & Edge Layer"
+        AGW["Kong API Gateway"]
+        Auth["Auth Service (OAuth2/JWT)"]
+    end
+
+    subgraph "III. Core Business Logic (Microservices)"
         direction TB
-        SA["Super Admin"]:::admin
-        A["Admin"]:::admin
-        M["Manager"]:::manager
-        U["End User"]:::user
-        
-        SA -->|Creates| A
-        A -->|Creates| M
-        M -->|Onboards| U
+        Utility["Utility Microservice (Elec/Gas/Mun)"]
+        Payment["Payment Service"]
+        Grievance["Grievance/Status Service"]
     end
 
-    %% ==========================================
-    %% 2. Frontend Layer
-    %% ==========================================
-    subgraph Frontend["Client Side (React)"]
-        Client["Admin Dashboard UI"]:::frontend
+    subgraph "IV. Integration & Notifications"
+        NOTIF["Notification Engine"]
+        WAGW["WhatsApp API Bridge"]
+        Webhook["Webhook Listener"]
     end
 
-    %% ==========================================
-    %% 3. Backend Layer
-    %% ==========================================
-    subgraph Backend["Backend Services (Node.js)"]
-        direction TB
-        APIGateway["API Routes / Gateway"]:::backend
-        AuthMw["Auth Middleware (JWT + RBAC)"]:::backend
-        
-        subgraph Controllers["Business Logic Controllers"]
-            C_Auth["Auth Controller"]:::logic
-            C_Dash["Dashboard Controller"]:::logic
-            C_User["User Mgmt Controller"]:::logic
-        end
+    subgraph "V. Persistence Layer"
+        DB[(PostgreSQL: Core Data)]
+        Logs[(Audit Logs: ELK Stack)]
     end
 
-    %% ==========================================
-    %% 4. Data Layer
-    %% ==========================================
-    subgraph DataPersistence["Data Persistence"]
-        direction TB
-        DB_User[("User Database")]:::db
-        DB_Logs[("Activity Logs")]:::db
-        DB_Cache[("Reports Cache")]:::db
-    end
+    %% Interaction Flows
+    Kiosk -->|HTTPS/REST| AGW
+    AGW --> Auth
+    Auth -.->|Validates| AGW
+    
+    %% Service Routing
+    AGW --> Utility
+    AGW --> Payment
+    AGW --> Grievance
 
-    %% ==========================================
-    %% Connections & Flows
-    %% ==========================================
-    
-    %% User Interaction
-    Users -->|Interacts with| Client
-    
-    %% Client to Backend
-    Client -->|HTTPS Request| APIGateway
-    APIGateway --> AuthMw
-    
-    %% Auth Routing
-    AuthMw -->|Validates Token| Controllers
-    
-    %% Controller Actions
-    %% 1. Auth Flow
-    C_Auth -->|Verify Creds| DB_User
-    C_Auth -->|Log Login| DB_Logs
-    
-    %% 2. Dashboard Flow
-    C_Dash -->|Read Stats| DB_User
-    C_Dash -->|Read Logs| DB_Logs
-    C_Dash -->|Write Cache| DB_Cache
-    
-    %% 3. User Mgmt Flow
-    C_User -->|CRUD Operations| DB_User
-    C_User -->|Log Actions| DB_Logs
+    %% Data Connections
+    Utility & Payment & Grievance --> DB
+    Utility & Payment & Grievance --> Logs
+
+    %% WhatsApp Outbound Notification
+    Payment & Grievance -->|Success Event| NOTIF
+    NOTIF -->|Push PDF/Link| WAGW
+    WAGW -->|Message| CitizenWA
+
+    %% WhatsApp Inbound Query
+    CitizenWA -->|'Query Status'| Webhook
+    Webhook -->|Parse Request| Grievance
+    Grievance -->|Fetch| DB
+    Grievance -->|Response| NOTIF
 
     %% Styling
-    classDef admin fill:#ff9999,stroke:#333,stroke-width:2px;
-    classDef manager fill:#99ccff,stroke:#333,stroke-width:2px;
-    classDef user fill:#99ff99,stroke:#333,stroke-width:2px;
-    classDef frontend fill:#ffffcc,stroke:#333,stroke-width:2px;
-    classDef backend fill:#f9f9f9,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5;
-    classDef logic fill:#e6e6e6,stroke:#333,stroke-width:2px;
-    classDef db fill:#e1d5e7,stroke:#333,stroke-width:2px;
+    style Kiosk fill:#f9f,stroke:#333
+    style CitizenWA fill:#25D366,color:#fff
+    style AGW fill:#69f,stroke:#333
+    style NOTIF fill:#ff9,stroke:#333
+
 ```
