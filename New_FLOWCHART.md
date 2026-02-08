@@ -9,7 +9,7 @@ graph TB
         AUTH["Secure Auth (Biometric/OTP/JWT)"]
     end
 
-    subgraph "API Management & Security Gateway"
+    subgraph "API Management and Security Gateway"
         AGW["API Gateway (Nginx/Kong)"]
         SEC["OAuth2 / JWT Provider"]
         LSB["Load Balancer"]
@@ -21,12 +21,12 @@ graph TB
         G_SVC["Gas Utility Service"]
         M_SVC["Municipal Service (Water/Waste)"]
         P_SVC["Secure Payment Gateway"]
-        D_SVC["Document & Receipt Service"]
+        D_SVC["Document and Receipt Service"]
     end
 
-    subgraph "Persistence & External Layer"
-        MDB [("Primary Database (PostgreSQL)")]
-        LOG [("Interaction Logs (MySQL)")]
+    subgraph "Persistence and External Layer"
+        MDB[("Primary Database (PostgreSQL)")]
+        LOG[("Interaction Logs (MySQL)")]
         EXT_PG["External Payment Aggregators"]
     end
 
@@ -42,9 +42,14 @@ graph TB
     LSB --> P_SVC
     LSB --> D_SVC
 
-    E_SVC & G_SVC & M_SVC & P_SVC & D_SVC <--> MDB
+    E_SVC <--> MDB
+    G_SVC <--> MDB
+    M_SVC <--> MDB
+    P_SVC <--> MDB
+    D_SVC <--> MDB
     P_SVC <--> EXT_PG
     D_SVC --> LOG
+
 ```
 
 ## 2. Service Communication Hub & Governance
@@ -60,7 +65,7 @@ flowchart TD
         end
     end
 
-    subgraph "Admin & Analytics Module"
+    subgraph "Admin and Analytics Module"
         ADM["Admin Dashboard UI"]
         REP["Reporting & Analytics Engine"]
         MON["Kiosk Usage Monitor"]
@@ -83,6 +88,6 @@ flowchart TD
 
     %% Regulatory Compliance
     style S3 fill:#f9f,stroke:#333,stroke-width:2px
-    DPDP["DPDP Act & IT Act Compliance Layer"]
+    DPDP["DPDP Act and IT Act Compliance Layer"]
     DPDP -.-> S3
 ```
